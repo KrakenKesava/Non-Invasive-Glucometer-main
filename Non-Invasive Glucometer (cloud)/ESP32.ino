@@ -11,11 +11,13 @@ MAX30105 particleSensor;
 const char* ssid = "1234";
 const char* password = "06102004";
 
-const char* serverName = "http://api.thingspeak.com/update";
-
 String ApiKey_write = "KA74G0UQWB0IIZX1";
+String ApiKey_read = "ZDDW6JOQAR00KHQQ";
 
-
+const char* write_serverName = "http://api.thingspeak.com/update";
+String i_read_serverName = "https://api.thingspeak.com/channels/2718503/fields/1.json" ;
+             // &result=3 shows the 3 previous entries in ThingSpeak
+String read_serverName = i_read_serverName + + "?api_key=" + ApiKey_read + "&results=3";
 
 int buz=7;
 int lcdColumns = 16;
@@ -558,20 +560,38 @@ void loop()
       Serial.println("Failed to read from IR sensor");
       return;
     }
-
-    http.begin(client , serverName);
+                                                                                // writing data 
+    http.begin(client , write_serverName);
 
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-    String httpReqData= "api_key=" + ApiKey_write + "&field1=" + String(PS_IR/1000.0);
+    String httpReqData= "api_key=" + ApiKey_write + "&field1=" + String(PS_IR/1000.0);   // writing the Glucose level into thing speak
     Serial.println(httpReqData);
     int httpResCode = http.POST(httpReqData);
 
     Serial.print("HTTP Response code:");
     Serial.println(httpResCode);
-    http.end();
+
+    http.end();                                                                          // writing completed and closed url
+
+                                                                                    // READING data
+    http.begin(client,read_serverName);
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
     
-  }
+    int httpResponseCode = http.GET(); 
+    if (httpResponseCode > 0) {  
+        String read_httpResData = http.getString();  
+        Serial.print("HTTP Read Data: ");
+        Serial.println(read_httpResData);  
+    } else {
+        Serial.print("Error on HTTP request: ");
+        Serial.println(httpResponseCode); 
+    }
+    http.end();
+
+
+    
+  } 
   else{
     Serial.println("WiFi Disconnected");
   }
